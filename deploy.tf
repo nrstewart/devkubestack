@@ -25,121 +25,120 @@ variable "k8s_master_ip" {
 variable "k8s_etcd_ip" {
   default = "192.168.1.10"
 }
+variable "k8s_cluster_name" {
+  default = "devKubeStack"
+}
 
 # build a private network
 #########################
 resource "openstack_networking_network_v2" "primary_network" {
-  name           = "syndicateNet"
+  name           = "${var.k8s_cluster_name}Net"
   admin_state_up = "true"
 }
 resource "openstack_networking_subnet_v2" "primary_subnet_v4" {
-  name        = "syndicateNet-v4"
+  name        = "${var.k8s_cluster_name}Net-v4"
   network_id  = "${openstack_networking_network_v2.primary_network.id}"
   enable_dhcp = "true"
   cidr        = "192.168.1.0/24"
   ip_version  = 4
 }
-resource "openstack_compute_secgroup_v2" "internal_security" {
-  name = "internal security"
-  description = "Allows open communication between nodes"
-  # tcp all
-  rule {
-    from_port = 1
-    to_port = 65535
-    ip_protocol = "tcp"
-    self = "true"
-  }
-  # udp all
-  rule {
-    from_port = 1
-    to_port = 65535
-    ip_protocol = "udp"
-    self = "true"
-  }
-  # icmp all
-  rule {
-    from_port = -1
-    to_port = -1
-    ip_protocol = "icmp"
-    self = "true"
-  }
-}
 
 # create security groups
 ########################
+resource "openstack_compute_secgroup_v2" "internal_security" {
+  name        = "internal security"
+  description = "Allows open communication between nodes"
+  # tcp all
+  rule {
+    from_port   = 1
+    to_port     = 65535
+    ip_protocol = "tcp"
+    self        = "true"
+  }
+  # udp all
+  rule {
+    from_port   = 1
+    to_port     = 65535
+    ip_protocol = "udp"
+    self        = "true"
+  }
+  # icmp all
+  rule {
+    from_port   = -1
+    to_port     = -1
+    ip_protocol = "icmp"
+    self        = "true"
+  }
+}
 resource "openstack_compute_secgroup_v2" "etcd_external" {
-  name = "etcd external security"
+  name        = "etcd external security"
   description = "Allows communication to etcd discovery service"
   # 4001/tcp
   rule {
-    from_port = 4001
-    to_port = 4001
+    from_port   = 4001
+    to_port     = 4001
     ip_protocol = "tcp"
-    cidr = "0.0.0.0/0"
+    cidr        = "0.0.0.0/0"
   }
   # 2379/tcp
   rule {
-    from_port = 2379
-    to_port = 2379
+    from_port   = 2379
+    to_port     = 2379
     ip_protocol = "tcp"
-    cidr = "0.0.0.0/0"
+    cidr        = "0.0.0.0/0"
   }
   # 2380/tcp
   rule {
-    from_port = 2380
-    to_port = 2380
+    from_port   = 2380
+    to_port     = 2380
     ip_protocol = "tcp"
-    cidr = "0.0.0.0/0"
+    cidr        = "0.0.0.0/0"
   }
   # 80/tcp
   rule {
-    from_port = 80
-    to_port = 80
+    from_port   = 80
+    to_port     = 80
     ip_protocol = "tcp"
-    cidr = "0.0.0.0/0"
+    cidr        = "0.0.0.0/0"
   }
  # 443/tcp
   rule {
-    from_port = 443
-    to_port = 443
+    from_port   = 443
+    to_port     = 443
     ip_protocol = "tcp"
-    cidr = "0.0.0.0/0"
+    cidr        = "0.0.0.0/0"
   }
 }
 
 # etcd host
 ###########
 resource "openstack_compute_instance_v2" "k8s_etcd" {
-  image_name = "Container-Linux"
-  name = "k8s-etcd"
-  flavor_name = "m1.small"
-  config_drive = "true"
-  user_data = "${file("${path.module}/00-etcd.yaml")}"
-  key_pair = "${openstack_compute_keypair_v2.keypair.name}"
+  image_name 			= "Container-Linux"
+  name       			= "k8s-etcd"
+  flavor_name			= "m1.small"
+  config_drive    = "true"
+  user_data       = "${file("${path.module}/00-etcd.yaml")}"
+  key_pair        = "${openstack_compute_keypair_v2.keypair.name}"
   security_groups = [
     "${openstack_compute_secgroup_v2.internal_security.name}",
     "${openstack_compute_secgroup_v2.etcd_external.name}",
     "default"
   ]
   network {
-    name = "default"
+    name           = "default"
     access_network = "true"
   }
   network {
-    uuid = "${openstack_networking_network_v2.primary_network.id}"
+    uuid        = "${openstack_networking_network_v2.primary_network.id}"
     fixed_ip_v4 = "${var.k8s_etcd_ip}"
   }
     # Generate the Certificate Authority
     provisioner "local-exec" {
-        command = <<EOF
-            ${path.module}/cfssl/generate_ca.sh
-EOF
+        command = "${path.module}/cfssl/generate_ca.sh"
     }
     # Generate k8s-etcd server certificate
     provisioner "local-exec" {
-        command = <<EOF
-            ${path.module}/cfssl/generate_server.sh k8s_etcd ${openstack_compute_instance_v2.k8s_etcd.network.1.fixed_ip_v4}
-EOF
+        command = "${path.module}/cfssl/generate_server.sh k8s_etcd ${openstack_compute_instance_v2.k8s_etcd.network.1.fixed_ip_v4}"
     }
     # Provision k8s_etcd server certificate
     provisioner "file" {
@@ -247,8 +246,7 @@ EOF
   }
   # Generate k8s_master client certificate
     provisioner "local-exec" {
-      command = <<EOF
-        ${path.module}/cfssl/generate_client.sh k8s_master
+      command = "${path.module}/cfssl/generate_client.sh k8s_master"
 EOF
     }
   # Provision k8s_master client certificate
@@ -354,9 +352,7 @@ resource "openstack_compute_instance_v2" "k8s_worker" {
   }
   # Generate k8s_worker client certificate
   provisioner "local-exec" {
-    command = <<EOF
-        ${path.module}/cfssl/generate_client.sh k8s_worker
-EOF
+    command = "${path.module}/cfssl/generate_client.sh k8s_worker"
   }
   # Provision k8s_master client certificate
   provisioner "file" {
@@ -442,9 +438,7 @@ EOF
 resource "null_resource" "make_admin_key" {
     depends_on = ["openstack_compute_instance_v2.k8s_worker"]
     provisioner "local-exec" {
-        command = <<EOF
-            ${path.module}/cfssl/generate_admin.sh
-EOF
+        command = "${path.module}/cfssl/generate_admin.sh"
     }
 }
 resource "null_resource" "setup_kubectl" {
