@@ -9,7 +9,7 @@ resource "openstack_compute_keypair_v2" "keypair" {
 }
 
 # variables -modify with a terraform.tfvars-
-#################################
+############################################
 variable "hyperkube_version" {
   default = "v1.5.4_coreos.0"
 }
