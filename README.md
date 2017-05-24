@@ -83,7 +83,7 @@ See the template `01-master.yaml`.
 
 #### Provisions
 
-Once we create this droplet (and get its `IP`), the TLS assets will be created locally (i.e. on the development machine from which we run `terraform`), and put into the directory `secrets` (which, again, is mentioned in `.gitignore`). The TLS assets consist of a server key and certificate for the API server, as well as a client key and certificate to authenticate flanneld and the API server to etcd2.
+Once we create this instance (and get its `IP`), the TLS assets will be created locally (i.e. on the development machine from which we run `terraform`), and put into the directory `secrets` (which, again, is mentioned in `.gitignore`). The TLS assets consist of a server key and certificate for the API server, as well as a client key and certificate to authenticate flanneld and the API server to etcd2.
 
 The TLS assets are copied to appropriate directories on the K8s master using Terraform `file` and `remote-exec` provisioners.
 
@@ -104,7 +104,7 @@ See the template `02-worker.yaml`.
 
 #### Provisions
 
-For each droplet created, a TLS client key and certificate will be created locally (i.e. on the development machine from which we run `terraform`), and put into the directory `secrets` (which, again, is mentioned in `.gitignore`).
+For each instance created, a TLS client key and certificate will be created locally (i.e. on the development machine from which we run `terraform`), and put into the directory `secrets` (which, again, is mentioned in `.gitignore`).
 
 The TLS assets are then copied to appropriate directories on the worker using Terraform `file` and `remote-exec` provisioners.
 
