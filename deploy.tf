@@ -247,7 +247,6 @@ EOF
   # Generate k8s_master client certificate
     provisioner "local-exec" {
       command = "${path.module}/cfssl/generate_client.sh k8s_master"
-EOF
     }
   # Provision k8s_master client certificate
   provisioner "file" {
